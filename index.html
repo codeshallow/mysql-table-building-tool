@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Table</title>
+
+	<!-- 引入样式 -->
+	<link rel="stylesheet" href="index.css">
+
+	<style>
+		body {
+			font-size: 14px;
+		}
+		.alertClass {
+			width: 1000px;
+		}
+		[v-cloak] {
+			display: none;
+		}
+	</style>
+
+</head>
+
+<body>
+	<div id="app" v-cloak>
+		<el-row>
+			<el-col :span="12" :offset="6">
+				<div>
+					<el-button type="success" @click="justDo">复制sql</el-button>
+					<el-button type="primary" @click="addTable">再加一个表</el-button>
+				</div>
+				<div v-for="(item, index) in tables" :key="item" style="margin: 40px 0; border-bottom: 1px solid yellowgreen;">
+					<div style="padding: 10px 0; border-bottom: 1px solid #ccc;">
+						<span style="margin-right: 10px;">表格名称</span>
+						<el-input v-model="item.name" style="width: 30%; margin-right: 10px;"></el-input>
+
+						<span style="margin-right: 10px;">表格名称备注</span>
+						<el-input v-model="item.comment" style="width: 30%;"></el-input>
+
+						<el-button size="small" type="danger" @click="delTable(index)">删除表</el-button>
+					</div>
+
+					<div style="padding: 10px 0;">
+						<el-button type="primary" size="mini" @click="add(item.name)">添加行</el-button>
+					</div>
+					<el-table stripe :data="item.tableData" style="width: 100%">
+						<el-table-column label="属性">
+							<template slot-scope="scope">
+								<el-input v-model="scope.row.prop"></el-input>
+							</template>
+						</el-table-column>
+						<el-table-column label="类型">
+							<template slot-scope="scope">
+								<el-select v-model="scope.row.type" placeholder="请选择" style="width: 100%;">
+									<el-option label="bigint(20)" value="bigint(20)"></el-option>
+									<el-option label="varchar(255)" value="varchar(255)"></el-option>
+									<el-option label="int(10)" value="int(10)"></el-option>
+									<el-option label="double(10,2)" value="double(10,2)"></el-option>
+									<el-option label="datetime" value="datetime"></el-option>
+									<el-option label="text" value="text"></el-option>
+								</el-select>
+							</template>
+						</el-table-column>
+						<el-table-column label="备注">
+							<template slot-scope="scope">
+								<el-input v-model="scope.row.comment"></el-input>
+							</template>
+						</el-table-column>
+						<el-table-column label="默认值">
+							<template slot-scope="scope">
+								<el-input v-model="scope.row.default"></el-input>
+							</template>
+						</el-table-column>
+						<el-table-column fixed="right" label="操作" width="100">
+							<template slot-scope="scope">
+								<el-button type="text" size="small" @click="del(item.name, scope.row.prop)">删除</el-button>
+							</template>
+						</el-table-column>
+
+					</el-table>
+				</div>
+
+			</el-col>
+		</el-row>
+
+
+		<el-dialog>
+
+		</el-dialog>
+
+
+	</div>
+
+
+	<!-- import Vue.js -->
+	<script src="vue.js"></script>
+	<!-- 引入组件库 -->
+	<script src="index.js"></script>
+	<script>
+		new Vue({
+			el: '#app',
+			data: {
+				tables: [
+					// {
+					// 	name: 'user',
+					// 	comment: '用户表',
+					// 	tableData: [
+					// 		{ prop: "id", type: 'bigint(20)', comment: '序号' },
+					// 		{ prop: "username", type: 'varchar(255)', comment: '用户名' },
+					// 		{ prop: "password", type: 'varchar(255)', comment: '密码' },
+					// 		{ prop: "nickname", type: 'varchar(255)', comment: '昵称' },
+					// 		{ prop: "email", type: 'varchar(255)', comment: '邮箱' },
+					// 		{ prop: "phone", type: 'varchar(255)', comment: '手机号' },
+					// 		{ prop: "avatar", type: 'varchar(255)', comment: '头像' },
+					// 		{ prop: "role", type: 'varchar(255)', comment: '角色' },
+					// 		{ prop: "sex", type: 'varchar(255)', comment: '性别' },
+					// 		{ prop: "age", type: 'int(10)', comment: '年龄' },
+					// 	]
+					// },
+				]
+
+			},
+			methods: {
+				delTable(index) {
+					this.tables.splice(index, 1);
+				},
+				addTable() {
+					this.tables.push({
+						name: '',
+						comment: '',
+						tableData: [
+							{ prop: "id", type: 'bigint(20)', comment: '序号' }
+						]
+					})
+				},
+				del(tableName, prop) {
+					this.tables.forEach(item => {
+						if (item.name === tableName) {
+							for (let i = item.tableData.length - 1; i > 0; i--) {
+								if (item.tableData[i].prop === prop) {
+									item.tableData.splice(i, 1);
+								}
+							}
+						}
+					})
+				},
+
+				add(name) {
+					this.tables.forEach(item => {
+						if (item.name === name) {
+							item.tableData.push({ prop: "", type: 'varchar(255)', comment: '' })
+						}
+					})
+				},
+				justDo() {
+					// 生成sql
+					let sql = "";
+					this.tables.forEach(item => {
+					
+						sql += "DROP TABLE IF EXISTS `" + item.name + "`;\n";
+						sql += "CREATE TABLE `" + item.name + "` (\n";
+						sql += "`id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '序号',\n";
+						item.tableData.forEach(column => {
+							if (column.prop !== 'id') {
+								column.default = column.default ? column.default : null;
+								sql += "`" + column.prop + "` " + column.type + " COLLATE utf8mb4_unicode_ci DEFAULT " + column.default + " COMMENT '" + column.comment + "',\n"
+							}
+						
+						})
+						sql += "PRIMARY KEY (`id`) USING BTREE\n"
+						sql += ") ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='" + item.comment + "';\n\n\n"
+					});
+
+					// this.$alert('<div style="padding: 20px; line-height: 30px">'+sql+'</div>', 'sql语句', {
+					// 	dangerouslyUseHTMLString: true,
+					// 	customClass: "alertClass"
+					// });
+
+					var temp = document.createElement('textarea');
+					temp.value = sql;
+					document.body.appendChild(temp);
+					temp.select(); // 选择对象
+					document.execCommand("Copy"); // 执行浏览器复制命令
+					document.body.removeChild(temp)
+
+					this.$message({type: 'success', message: '复制成功'})
+
+
+				}
+			}
+		})
+	</script>
+
+</body>
+
+</html>
